@@ -232,7 +232,7 @@ class ClaudeProductAnalyzer:
 # ============================================================================
 
 def fetch_weibo_hot(count=10):
-    """获取微博热搜榜单"""
+    """获取微博热搜榜单（带重试机制）"""
     url = CONFIG["weibo_api"]["url"]
     params = {
         "key": CONFIG["weibo_api"]["key"],
@@ -244,22 +244,45 @@ def fetch_weibo_hot(count=10):
     print(f"{'='*55}")
     print(f"\n正在获取微博热搜TOP {count}...")
 
-    try:
-        response = requests.get(url, params=params, timeout=15)
-        response.encoding = 'utf-8'
-        data = response.json()
+    # 重试机制：最多尝试3次
+    max_retries = 3
+    for attempt in range(max_retries):
+        try:
+            print(f"  尝试第 {attempt + 1}/{max_retries} 次请求...")
+            response = requests.get(url, params=params, timeout=30)
+            response.encoding = 'utf-8'
+            data = response.json()
 
-        if data.get("code") == 200:
-            hot_list = data.get("result", {}).get("list", [])
-            hot_list = hot_list[:count]
-            print(f"获取成功！共 {len(hot_list)} 条热搜\n")
-            return hot_list
-        else:
-            print(f"API返回错误: {data.get('msg', '未知错误')}")
-            return get_backup_hot_list(count)
-    except Exception as e:
-        print(f"请求失败: {e}")
-        return get_backup_hot_list(count)
+            if data.get("code") == 200:
+                hot_list = data.get("result", {}).get("list", [])
+                hot_list = hot_list[:count]
+                print(f"✓ 获取成功！共 {len(hot_list)} 条热搜\n")
+                return hot_list
+            else:
+                print(f"  API返回错误: {data.get('msg', '未知错误')}")
+                if attempt < max_retries - 1:
+                    print(f"  等待2秒后重试...")
+                    time.sleep(2)
+                else:
+                    return get_backup_hot_list(count)
+        except requests.exceptions.Timeout:
+            print(f"  请求超时（30秒）")
+            if attempt < max_retries - 1:
+                print(f"  等待2秒后重试...")
+                time.sleep(2)
+            else:
+                print(f"  所有重试均失败，使用备用数据")
+                return get_backup_hot_list(count)
+        except Exception as e:
+            print(f"  请求异常: {e}")
+            if attempt < max_retries - 1:
+                print(f"  等待2秒后重试...")
+                time.sleep(2)
+            else:
+                print(f"  所有重试均失败，使用备用数据")
+                return get_backup_hot_list(count)
+
+    return get_backup_hot_list(count)
 
 def get_backup_hot_list(count=10):
     """备用热搜列表（用于测试）"""
