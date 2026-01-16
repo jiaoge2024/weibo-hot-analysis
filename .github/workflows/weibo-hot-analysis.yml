@@ -1,4 +1,4 @@
-name: Weibo Hot Search Analysis (Claude SDK)
+name: Weibo Hot Search Analysis (智谱AI SDK)
 
 on:
   schedule:
@@ -63,11 +63,23 @@ jobs:
         env:
           TIANAPI_KEY: ${{ secrets.TIANAPI_KEY }}
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          CUSTOM_API_URL: ${{ secrets.CUSTOM_API_URL }}
+          CUSTOM_MODEL_ID: ${{ secrets.CUSTOM_MODEL_ID }}
           ANALYSIS_COUNT: ${{ github.event.inputs.count || '10' }}
-          CLAUDE_MODEL: claude-3-5-sonnet-20241022
         run: |
-          echo "Starting Weibo hot search analysis with Claude SDK..."
-          echo "Analyzing top $ANALYSIS_COUNT hot topics..."
+          echo "=========================================="
+          echo "  微博热搜产品创意分析 (智谱AI增强版)"
+          echo "=========================================="
+          echo ""
+          if [ -n "$CUSTOM_API_URL" ]; then
+            echo "🤖 使用自定义API端点: $CUSTOM_API_URL"
+            echo "🎯 使用模型: $CUSTOM_MODEL_ID"
+          else
+            echo "🤖 使用默认Claude API"
+          fi
+          echo ""
+          echo "📊 分析TOP $ANALYSIS_COUNT热搜话题..."
+          echo ""
           python weibo_analyzer_sdk.py $ANALYSIS_COUNT
 
       - name: Display summary

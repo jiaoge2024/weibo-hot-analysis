@@ -64,7 +64,7 @@ CONFIG = load_config()
 # ============================================================================
 
 class ClaudeProductAnalyzer:
-    """使用Claude Agent SDK进行产品创意分析"""
+    """使用Claude Agent SDK进行产品创意分析（支持自定义API端点）"""
 
     def __init__(self):
         if not CLAUDE_AVAILABLE:
@@ -74,9 +74,17 @@ class ClaudeProductAnalyzer:
         if not api_key:
             raise ValueError("ANTHROPIC_API_KEY环境变量未设置")
 
-        self.client = anthropic.Anthropic(api_key=api_key)
-        self.model = os.environ.get("CLAUDE_MODEL", "claude-3-5-sonnet-20241022")
-        print(f"✓ Claude分析器已初始化 (模型: {self.model})")
+        # 支持自定义API端点（如智谱AI兼容接口）
+        custom_api_url = os.environ.get("CUSTOM_API_URL")
+        if custom_api_url:
+            self.client = anthropic.Anthropic(api_key=api_key, base_url=custom_api_url)
+            print(f"✓ 使用自定义API端点: {custom_api_url}")
+        else:
+            self.client = anthropic.Anthropic(api_key=api_key)
+
+        # 支持自定义模型ID
+        self.model = os.environ.get("CUSTOM_MODEL_ID") or os.environ.get("CLAUDE_MODEL", "claude-3-5-sonnet-20241022")
+        print(f"✓ AI分析器已初始化 (模型: {self.model})")
 
     def analyze_product_idea(self, topic: str, search_results: list) -> dict:
         """使用Claude分析产品创意"""
