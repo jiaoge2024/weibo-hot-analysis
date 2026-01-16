@@ -298,19 +298,19 @@ def get_backup_hot_list(count=10):
 # ============================================================================
 
 def web_search_topic(topic, max_results=3):
-    """对热搜话题进行web搜索"""
-    if not CONFIG["analysis"]["enable_web_search"]:
+    """对热搜话题进行web搜索（增强错误处理）"""
+    if not CONFIG["analysis"].get("enable_web_search", True):
         return []
 
-    search_query = f"{topic} 新闻 背景"
-    encoded_query = requests.utils.quote(search_query)
-    search_url = f"https://www.baidu.com/s?wd={encoded_query}"
-
-    headers = {
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
-    }
-
     try:
+        search_query = f"{topic} 新闻 背景"
+        encoded_query = requests.utils.quote(search_query)
+        search_url = f"https://www.baidu.com/s?wd={encoded_query}"
+
+        headers = {
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
+        }
+
         time.sleep(0.5)  # 避免请求过快
         response = requests.get(search_url, headers=headers, timeout=10)
         response.encoding = 'utf-8'
@@ -318,18 +318,34 @@ def web_search_topic(topic, max_results=3):
         soup = BeautifulSoup(response.text, 'html.parser')
 
         results = []
-        for item in soup.select('.result')[:max_results]:
-            title_elem = item.select_one('h3 a')
-            if title_elem:
-                title = title_elem.get_text(strip=True)
-                results.append({
-                    "title": title,
-                    "url": title_elem.get('href', '')
-                })
+        # 尝试多种选择器
+        selectors = ['.result', 'div[class*="result"]', '.c-container']
+
+        for selector in selectors:
+            items = soup.select(selector)[:max_results]
+            if items:
+                for item in items:
+                    try:
+                        title_elem = item.select_one('h3 a') or item.select_one('a')
+                        if title_elem:
+                            title = title_elem.get_text(strip=True)
+                            href = title_elem.get('href', '')
+                            if title and len(title) > 5:
+                                results.append({
+                                    "title": title[:100],  # 限制长度
+                                    "url": href
+                                })
+                                if len(results) >= max_results:
+                                    break
+                    except:
+                        continue
+                if results:
+                    break
 
         return results
+
     except Exception as e:
-        print(f"  [搜索失败] {topic}: {e}")
+        print(f"  [搜索失败] {topic}: {str(e)[:50]}")
         return []
 
 
