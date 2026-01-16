@@ -80,7 +80,7 @@ jobs:
           echo ""
           echo "📊 分析TOP $ANALYSIS_COUNT热搜话题..."
           echo ""
-          python weibo_analyzer_v2.py $ANALYSIS_COUNT
+          python weibo_analyzer_final.py $ANALYSIS_COUNT
 
       - name: Display summary
         run: |
