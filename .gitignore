@@ -1,0 +1,70 @@
+# Weibo Hot Search Analyzer - Git Ignore File
+
+# ===================
+# Sensitive Configuration
+# ===================
+config.json
+*.key
+.env
+.env.local
+
+# ===================
+# Python
+# ===================
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# ===================
+# Virtual Environments
+# ===================
+venv/
+ENV/
+env/
+.venv
+
+# ===================
+# IDE
+# ===================
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# ===================
+# Temporary Files
+# ===================
+*.tmp
+*.cwd
+*.log
+*.bak
+
+# ===================
+# Output (keep directory structure but ignore contents if needed)
+# ===================
+# output/*.html  # Comment out if you want to commit HTML reports
+output/*.tmp
+
+# ===================
+# Claude Code
+# ===================
+.claude/settings.local.json

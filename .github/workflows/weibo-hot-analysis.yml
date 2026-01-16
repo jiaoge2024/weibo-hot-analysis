@@ -1,0 +1,111 @@
+name: Weibo Hot Search Analysis (Claude SDK)
+
+on:
+  schedule:
+    # 每天8点执行 (UTC时间0点 = 北京时间8点)
+    - cron: '0 0 * * *'
+  workflow_dispatch:  # 允许手动触发
+    inputs:
+      count:
+        description: '分析的热搜数量 (默认10)'
+        required: false
+        default: '10'
+
+jobs:
+  analyze:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Create config file
+        env:
+          TIANAPI_KEY: ${{ secrets.TIANAPI_KEY }}
+        run: |
+          cat > config.json << EOF
+          {
+            "weibo_api": {
+              "url": "https://apis.tianapi.com/weibohot/index",
+              "key": "${TIANAPI_KEY}"
+            },
+            "analysis": {
+              "default_count": ${{ github.event.inputs.count || '10' }},
+              "enable_ai_analysis": true,
+              "enable_web_search": true,
+              "max_concurrent_searches": 5,
+              "use_claude_sdk": true
+            },
+            "openai": {
+              "api_key": "",
+              "model": "gpt-4o-mini",
+              "base_url": "https://api.openai.com/v1"
+            },
+            "output": {
+              "directory": "output",
+              "auto_open": false
+            }
+          }
+          EOF
+
+      - name: Run Weibo Hot Analysis
+        env:
+          TIANAPI_KEY: ${{ secrets.TIANAPI_KEY }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          ANALYSIS_COUNT: ${{ github.event.inputs.count || '10' }}
+          CLAUDE_MODEL: claude-3-5-sonnet-20241022
+        run: |
+          echo "Starting Weibo hot search analysis with Claude SDK..."
+          echo "Analyzing top $ANALYSIS_COUNT hot topics..."
+          python weibo_analyzer_sdk.py $ANALYSIS_COUNT
+
+      - name: Display summary
+        run: |
+          echo "## 📊 Analysis Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "- **Analysis Time**: $(date '+%Y-%m-%d %H:%M:%S UTC')" >> $GITHUB_STEP_SUMMARY
+          echo "- **Topic Count**: ${{ github.event.inputs.count || '10' }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Reports Generated**:" >> $GITHUB_STEP_SUMMARY
+          ls -lh output/*.html | awk '{print "- " $9 " (" $5 ")"}' >> $GITHUB_STEP_SUMMARY
+
+      - name: Upload reports as artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: weibo-hot-report-${{ github.run_number }}
+          path: output/*.html
+          retention-days: 30
+          if-no-files-found: warn
+
+      - name: Commit and push reports
+        run: |
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+          git add output/*.html
+          git diff --quiet && git diff --staged --quiet || git commit -m "🤖 Auto: Weibo hot analysis report [skip ci]"
+          git push
+        continue-on-error: true
+
+      - name: Create release report
+        if: success()
+        run: |
+          # 获取最新的报告文件
+          LATEST_REPORT=$(ls -t output/*.html | head -1)
+          REPORT_NAME=$(basename "$LATEST_REPORT")
+          REPORT_DATE=$(echo "$REPORT_NAME" | sed -n 's/.*_\([0-9]\{8\})_.*/\1/p')
+
+          echo "## 📄 Latest Report" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "📅 Date: $REPORT_DATE" >> $GITHUB_STEP_SUMMARY
+          echo "📁 File: $REPORT_NAME" >> $GITHUB_STEP_SUMMARY
+          echo "📦 Download from Artifacts below ⬇️" >> $GITHUB_STEP_SUMMARY

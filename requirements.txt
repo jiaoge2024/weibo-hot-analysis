@@ -1,0 +1,10 @@
+# Weibo Hot Search Analyzer - Python Dependencies
+
+# HTTP requests
+requests>=2.31.0
+
+# HTML parsing
+beautifulsoup4>=4.12.0
+
+# Claude Agent SDK (方案B: 使用Claude AI进行深度分析)
+anthropic>=0.18.0

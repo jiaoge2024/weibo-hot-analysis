@@ -1,0 +1,585 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>微博热搜产品创意分析报告 - 20260116</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+            min-height: 100vh;
+            padding: 15px 20px;
+            line-height: 1.5;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 18px;
+        }
+
+        h1 {
+            font-size: 1.4em;
+            background: linear-gradient(90deg, #ff6b6b, #feca57, #48dbfb);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 4px;
+            animation: shimmer 3s ease-in-out infinite;
+        }
+
+        @keyframes shimmer {
+            0%, 100% { filter: brightness(1); }
+            50% { filter: brightness(1.2); }
+        }
+
+        .subtitle {
+            color: #94a3b8;
+            font-size: 0.8em;
+            margin-bottom: 3px;
+        }
+
+        .update-time {
+            color: #64748b;
+            font-size: 0.7em;
+        }
+
+        .stats {
+            display: flex;
+            justify-content: center;
+            gap: 12px;
+            margin-top: 8px;
+            flex-wrap: wrap;
+        }
+
+        .stat-item {
+            background: rgba(255, 255, 255, 0.05);
+            padding: 8px 14px;
+            border-radius: 8px;
+            text-align: center;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .stat-value {
+            font-size: 1.2em;
+            font-weight: bold;
+            margin-bottom: 2px;
+        }
+
+        .stat-label {
+            color: #94a3b8;
+            font-size: 0.65em;
+        }
+
+        .excellent { color: #ffd700; }
+        .good { color: #48dbfb; }
+        .average { color: #a0aec0; }
+
+        .topics-grid {
+            display: grid;
+            gap: 20px;
+        }
+
+        /* 新模板卡片样式 */
+        .topic-card {
+            background: white;
+            border: 2px solid #22c55e;
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+        }
+
+        /* 顶部信息区 */
+        .top-info {
+            background: #dcfce7;
+            padding: 16px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+
+        .top-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .topic-title-group {
+            display: flex;
+            align-items: center;
+        }
+
+        .topic-title {
+            font-size: 1.3em;
+            font-weight: bold;
+            color: #1f2937;
+        }
+
+        .hot-tag {
+            background: #ef4444;
+            color: white;
+            padding: 4px 12px;
+            border-radius: 9999px;
+            font-size: 0.85em;
+            margin-left: 10px;
+        }
+
+        .score-display {
+            text-align: right;
+        }
+
+        .score-number {
+            font-size: 2.5em;
+            font-weight: bold;
+            color: #16a34a;
+            line-height: 1;
+        }
+
+        .score-label {
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            margin-top: 4px;
+        }
+
+        .score-label-text {
+            color: #16a34a;
+            font-weight: 500;
+        }
+
+        .topic-meta {
+            margin-top: 10px;
+            font-size: 0.9em;
+            color: #6b7280;
+        }
+
+        .heat-value {
+            color: #ef4444;
+        }
+
+        /* 事件脉络区 - 压缩样式 */
+        .section-header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .section-line {
+            width: 3px;
+            height: 18px;
+            background: #3b82f6;
+            margin-right: 8px;
+        }
+
+        .section-title-blue {
+            font-size: 0.95em;
+            font-weight: bold;
+            color: #2563eb;
+        }
+
+        .section-title-yellow {
+            font-size: 1em;
+            font-weight: bold;
+            color: #eab308;
+        }
+
+        .timeline-section {
+            margin-bottom: 15px;
+            padding: 12px;
+            background: #f8fafc;
+            border-radius: 6px;
+        }
+
+        .timeline-item {
+            margin-bottom: 8px;
+        }
+
+        .timeline-item:last-child {
+            margin-bottom: 0;
+        }
+
+        .timeline-label {
+            font-weight: 600;
+            color: #475569;
+            margin-bottom: 2px;
+            font-size: 0.85em;
+        }
+
+        .timeline-content {
+            color: #64748b;
+            font-size: 0.85em;
+            line-height: 1.4;
+        }
+
+        /* 产品创意详情区 - 突出样式 */
+        .product-details {
+            background: linear-gradient(135deg, #fefce8 0%, #fef9c3 100%);
+            padding: 22px;
+            border-radius: 10px;
+            border: 2px solid #facc15;
+            box-shadow: 0 4px 15px rgba(250, 204, 21, 0.2);
+        }
+
+        .detail-item {
+            display: flex;
+            margin-bottom: 18px;
+            padding-bottom: 14px;
+            border-bottom: 1px dashed #eab308;
+        }
+
+        .detail-item:last-child {
+            margin-bottom: 0;
+            padding-bottom: 0;
+            border-bottom: none;
+        }
+
+        .detail-icon {
+            margin-right: 12px;
+            font-size: 1.3em;
+        }
+
+        .detail-content {
+            flex: 1;
+        }
+
+        .detail-label {
+            font-weight: 600;
+            color: #1f2937;
+            margin-bottom: 6px;
+            font-size: 0.95em;
+        }
+
+        .detail-text {
+            color: #374151;
+            font-size: 0.9em;
+            line-height: 1.5;
+        }
+
+        .score-text {
+            color: #16a34a;
+            font-weight: 600;
+            font-size: 0.95em;
+        }
+
+        .footer {
+            text-align: center;
+            margin-top: 35px;
+            color: #64748b;
+            font-size: 0.75em;
+            padding-top: 20px;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .footer a {
+            color: #00d4ff;
+            text-decoration: none;
+        }
+
+        @media (max-width: 768px) {
+            h1 { font-size: 1.4em; }
+            .stats { gap: 12px; }
+            .stat-item { padding: 10px 15px; }
+            .top-header { flex-direction: column; align-items: flex-start; gap: 12px; }
+            .score-display { text-align: left; }
+            .product-details { padding: 16px; }
+            .detail-item { margin-bottom: 14px; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>微博热搜产品创意分析报告</h1>
+            <p class="subtitle">基于热搜话题的产品创新机会挖掘</p>
+            <p class="update-time">生成时间: 2026年01月16日 21:39</p>
+
+            <div class="stats">
+                <div class="stat-item">
+                    <div class="stat-value excellent">3</div>
+                    <div class="stat-label">分析热点</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value excellent">2</div>
+                    <div class="stat-label">优秀创意 (≥80分)</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value good">1</div>
+                    <div class="stat-label">良好创意 (60-80分)</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value average">0</div>
+                    <div class="stat-label">一般创意 (<60分)</div>
+                </div>
+            </div>
+        </header>
+
+        <div class="topics-grid">
+
+            <div class="topic-card">
+                <!-- 顶部信息区 -->
+                <div class="top-info">
+                    <div class="top-header">
+                        <div class="topic-title-group">
+                            <span style="font-size: 1.5em; margin-right: 10px;">🔥</span>
+                            <span class="topic-title">#轧戏#</span>
+                            <span class="hot-tag">热</span>
+                        </div>
+                        <div class="score-display">
+                            <div class="score-number">88</div>
+                            <div class="score-label">
+                                <span style="margin-right: 5px;">⭐</span>
+                                <span class="score-label-text">优秀</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="topic-meta">
+                        排名: 第2名
+                    </div>
+                </div>
+
+                <!-- 事件脉络区 -->
+                <div class="timeline-section">
+                    <div class="section-header">
+                        <div class="section-line"></div>
+                        <span class="section-title-blue">事件脉络</span>
+                    </div>
+                    <div class="timeline-item">
+                        <div class="timeline-label">起因:</div>
+                        <div class="timeline-content">有演员被指'轧戏'，行业潜规则引发讨论</div>
+                    </div>
+                    <div class="timeline-item">
+                        <div class="timeline-label">发展:</div>
+                        <div class="timeline-content">网友热议演员职业操守和行业规范</div>
+                    </div>
+                    <div class="timeline-item">
+                        <div class="timeline-label">影响:</div>
+                        <div class="timeline-content">影视行业职业道德受到关注，演员管理规范被讨论</div>
+                    </div>
+                </div>
+
+                <!-- 产品创意详情区 -->
+                <div class="product-details">
+                    <div class="section-header">
+                        <span style="margin-right: 10px;">💡</span>
+                        <span class="section-title-yellow">产品创意详情</span>
+                    </div>
+
+                    <div class="detail-item">
+                        <span class="detail-icon">🎯</span>
+                        <div class="detail-content">
+                            <div class="detail-label">产品名称:</div>
+                            <div class="detail-text" style="color: #1f2937; font-weight: 500;">「轧戏」影视追踪器</div>
+                        </div>
+                    </div>
+
+                    <div class="detail-item">
+                        <span class="detail-icon">⚙️</span>
+                        <div class="detail-content">
+                            <div class="detail-label">核心功能:</div>
+                            <div class="detail-text">影视资讯追踪 - 实时推送'轧戏'相关影视动态、开机消息、播出时间; 剧情智能解析 - AI分析剧情走向，提供角色关系图谱和关键情节解读; 口碑评分预测 - 基于社交媒体数据，预测影视作品的口碑走向</div>
+                        </div>
+                    </div>
+
+                    <div class="detail-item">
+                        <span class="detail-icon" style="color: #9333ea;">👥</span>
+                        <div class="detail-content">
+                            <div class="detail-label">目标用户:</div>
+                            <div class="detail-text">关注'轧戏'的影视娱乐爱好者，追剧追星族，喜欢与他人讨论分享，希望获取最新最全的娱乐资讯</div>
+                        </div>
+                    </div>
+
+                    <div class="detail-item">
+                        <span class="detail-icon" style="color: #22c55e;">📊</span>
+                        <div class="detail-content">
+                            <div class="detail-label">评分详情:</div>
+                            <div class="score-text">有趣度: 72/80分 | 有用度: 16/20分 | 综合: 88分</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="topic-card">
+                <!-- 顶部信息区 -->
+                <div class="top-info">
+                    <div class="top-header">
+                        <div class="topic-title-group">
+                            <span style="font-size: 1.5em; margin-right: 10px;">🔥</span>
+                            <span class="topic-title">#器官也能3D打印了#</span>
+                            <span class="hot-tag">热</span>
+                        </div>
+                        <div class="score-display">
+                            <div class="score-number">83</div>
+                            <div class="score-label">
+                                <span style="margin-right: 5px;">⭐</span>
+                                <span class="score-label-text">优秀</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="topic-meta">
+                        排名: 第3名
+                    </div>
+                </div>
+
+                <!-- 事件脉络区 -->
+                <div class="timeline-section">
+                    <div class="section-header">
+                        <div class="section-line"></div>
+                        <span class="section-title-blue">事件脉络</span>
+                    </div>
+                    <div class="timeline-item">
+                        <div class="timeline-label">起因:</div>
+                        <div class="timeline-content">器官也能3D打印了技术突破引发关注</div>
+                    </div>
+                    <div class="timeline-item">
+                        <div class="timeline-label">发展:</div>
+                        <div class="timeline-content">网友热议医疗科技进展和未来应用</div>
+                    </div>
+                    <div class="timeline-item">
+                        <div class="timeline-label">影响:</div>
+                        <div class="timeline-content">医疗科技受到关注，公众对生物打印技术讨论增多</div>
+                    </div>
+                </div>
+
+                <!-- 产品创意详情区 -->
+                <div class="product-details">
+                    <div class="section-header">
+                        <span style="margin-right: 10px;">💡</span>
+                        <span class="section-title-yellow">产品创意详情</span>
+                    </div>
+
+                    <div class="detail-item">
+                        <span class="detail-icon">🎯</span>
+                        <div class="detail-content">
+                            <div class="detail-label">产品名称:</div>
+                            <div class="detail-text" style="color: #1f2937; font-weight: 500;">「器官也能3D打印」智能分析助手</div>
+                        </div>
+                    </div>
+
+                    <div class="detail-item">
+                        <span class="detail-icon">⚙️</span>
+                        <div class="detail-content">
+                            <div class="detail-label">核心功能:</div>
+                            <div class="detail-text">智能内容推荐 - AI根据'器官也能3D打印了'推送最相关的内容; 实时动态追踪 - 第一时间获取'{topic}'的最新进展; 个性化定制 - 根据用户偏好自定义展示内容</div>
+                        </div>
+                    </div>
+
+                    <div class="detail-item">
+                        <span class="detail-icon" style="color: #9333ea;">👥</span>
+                        <div class="detail-content">
+                            <div class="detail-label">目标用户:</div>
+                            <div class="detail-text">关注'器官也能3D打印了'话题的用户群体，希望获取相关深度信息和专业分析</div>
+                        </div>
+                    </div>
+
+                    <div class="detail-item">
+                        <span class="detail-icon" style="color: #22c55e;">📊</span>
+                        <div class="detail-content">
+                            <div class="detail-label">评分详情:</div>
+                            <div class="score-text">有趣度: 67/80分 | 有用度: 16/20分 | 综合: 83分</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="topic-card">
+                <!-- 顶部信息区 -->
+                <div class="top-info">
+                    <div class="top-header">
+                        <div class="topic-title-group">
+                            <span style="font-size: 1.5em; margin-right: 10px;">🔥</span>
+                            <span class="topic-title">#胖东来599元羽绒服进价457.9元#</span>
+                            <span class="hot-tag">热</span>
+                        </div>
+                        <div class="score-display">
+                            <div class="score-number">69</div>
+                            <div class="score-label">
+                                <span style="margin-right: 5px;">⭐</span>
+                                <span class="score-label-text">优秀</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="topic-meta">
+                        排名: 第1名
+                    </div>
+                </div>
+
+                <!-- 事件脉络区 -->
+                <div class="timeline-section">
+                    <div class="section-header">
+                        <div class="section-line"></div>
+                        <span class="section-title-blue">事件脉络</span>
+                    </div>
+                    <div class="timeline-item">
+                        <div class="timeline-label">起因:</div>
+                        <div class="timeline-content">胖东来599元羽绒服进价457.9元曝光，胖东来商品定价引发热议</div>
+                    </div>
+                    <div class="timeline-item">
+                        <div class="timeline-label">发展:</div>
+                        <div class="timeline-content">网友热议'599元'售价与'457.9元'进价的价差</div>
+                    </div>
+                    <div class="timeline-item">
+                        <div class="timeline-label">影响:</div>
+                        <div class="timeline-content">胖东来回应舆论，公众关注商品定价透明度与商业利润</div>
+                    </div>
+                </div>
+
+                <!-- 产品创意详情区 -->
+                <div class="product-details">
+                    <div class="section-header">
+                        <span style="margin-right: 10px;">💡</span>
+                        <span class="section-title-yellow">产品创意详情</span>
+                    </div>
+
+                    <div class="detail-item">
+                        <span class="detail-icon">🎯</span>
+                        <div class="detail-content">
+                            <div class="detail-label">产品名称:</div>
+                            <div class="detail-text" style="color: #1f2937; font-weight: 500;">「胖东来599」智能比价助手</div>
+                        </div>
+                    </div>
+
+                    <div class="detail-item">
+                        <span class="detail-icon">⚙️</span>
+                        <div class="detail-content">
+                            <div class="detail-label">核心功能:</div>
+                            <div class="detail-text">实时价格监控 - 追踪'胖东来599元羽绒服进价457.9元'相关商品的价格波动，第一时间通知降价; 历史价格走势 - 展示商品过去3个月的价格变化曲线，智能预测最佳购买时机; 全网比价功能 - 一键对比京东、淘宝、天猫等平台同款商品价格</div>
+                        </div>
+                    </div>
+
+                    <div class="detail-item">
+                        <span class="detail-icon" style="color: #9333ea;">👥</span>
+                        <div class="detail-content">
+                            <div class="detail-label">目标用户:</div>
+                            <div class="detail-text">关注'胖东来599元羽绒服进价457.9元'的网购爱好者，追求高性价比，注重商品真实评价，希望用最优惠的价格买到心仪商品</div>
+                        </div>
+                    </div>
+
+                    <div class="detail-item">
+                        <span class="detail-icon" style="color: #22c55e;">📊</span>
+                        <div class="detail-content">
+                            <div class="detail-label">评分详情:</div>
+                            <div class="score-text">有趣度: 54/80分 | 有用度: 15/20分 | 综合: 69分</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+        <footer class="footer">
+            <p>数据来源: 微博热搜 | 生成工具: 微博热搜产品创意分析 v1.0</p>
+            <p>本报告基于AI分析生成，仅供参考</p>
+        </footer>
+    </div>
+</body>
+</html>
