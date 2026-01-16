@@ -262,16 +262,33 @@ class ZhipuProductAnalyzer:
 
             result_text = response.content[0].text
 
-            # 清理markdown标记
-            if result_text.startswith("```json"):
-                result_text = result_text[7:]
-            if result_text.startswith("```"):
-                result_text = result_text[3:]
-            if result_text.endswith("```"):
-                result_text = result_text[:-3]
-            result_text = result_text.strip()
+            # 打印原始响应用于调试（前200字符）
+            print(f"  [DEBUG] AI响应预览: {result_text[:200]}...")
 
-            analysis = json.loads(result_text)
+            # 改进的JSON提取逻辑
+            # 1. 尝试直接解析
+            try:
+                analysis = json.loads(result_text)
+            except json.JSONDecodeError:
+                # 2. 尝试提取```json...```代码块
+                import re
+                json_match = re.search(r'```json\s*(.*?)\s*```', result_text, re.DOTALL)
+                if json_match:
+                    result_text = json_match.group(1)
+                else:
+                    # 3. 尝试提取```...```代码块
+                    json_match = re.search(r'```\s*(.*?)\s*```', result_text, re.DOTALL)
+                    if json_match:
+                        result_text = json_match.group(1)
+                    else:
+                        # 4. 尝试找到第一个{和最后一个}之间的内容
+                        first_brace = result_text.find('{')
+                        last_brace = result_text.rfind('}')
+                        if first_brace >= 0 and last_brace > first_brace:
+                            result_text = result_text[first_brace:last_brace + 1]
+
+                result_text = result_text.strip()
+                analysis = json.loads(result_text)
 
             # 计算总分
             scores = analysis["scores"]
@@ -286,10 +303,12 @@ class ZhipuProductAnalyzer:
             return analysis
 
         except json.JSONDecodeError as e:
-            print(f"  ✗ JSON解析失败，使用规则引擎")
+            print(f"  ✗ JSON解析失败，响应内容: {result_text[:100]}...")
+            print(f"  降级到规则引擎")
             return self._rule_based_analysis(topic, search_results)
         except Exception as e:
-            print(f"  ✗ AI调用失败: {str(e)[:30]}，使用规则引擎")
+            print(f"  ✗ AI调用失败: {str(e)[:50]}")
+            print(f"  降级到规则引擎")
             return self._rule_based_analysis(topic, search_results)
 
     def _build_context(self, topic: str, search_results: list) -> str:
