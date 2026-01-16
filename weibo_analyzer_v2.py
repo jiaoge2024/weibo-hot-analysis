@@ -451,7 +451,7 @@ def generate_html_report(hot_topics_with_analysis):
     if existing_files:
         numbers = []
         for f in existing_files:
-            match = re.search rf'weibo_hot_{date_str}_(\d+)\.html', f.name)
+            match = re.search(rf'weibo_hot_{date_str}_(\d+)\.html', f.name)
             if match:
                 numbers.append(int(match.group(1)))
         file_number = max(numbers) + 1 if numbers else 1
